@@ -63,6 +63,7 @@ void            ramdiskrw(struct buf*);
 void*           kalloc(void);
 void            kfree(void *);
 void            kinit(void);
+int             freemem_size(void);
 
 // log.c
 void            initlog(int, struct superblock*);
@@ -82,6 +83,7 @@ void            panic(char*) __attribute__((noreturn));
 void            printfinit(void);
 
 // proc.c
+int             num_proc(void);
 int             cpuid(void);
 void            exit(int);
 int             fork(void);
