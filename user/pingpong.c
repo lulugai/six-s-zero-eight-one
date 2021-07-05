@@ -32,14 +32,14 @@ main(int argc, char *argv[])
     if(write(p1[1], buffer, len) != len){
       fprintf(2, "a---->b,write error\n");
       exit(1);
-    }
+    } 
+    wait(0);  
     if(read(p2[0],buffer, len) != len){
       fprintf(2, "a<----b, read error\n");
       exit(1); 
     }
     int pid = getpid();
     fprintf(1, "%d: received pong\n", pid);
-    wait(0);  
   }    
   exit(0);
 }
