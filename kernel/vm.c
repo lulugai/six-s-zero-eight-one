@@ -25,7 +25,7 @@ kvminit()
   memset(kernel_pagetable, 0, PGSIZE);
 
   // uart registers
-  kvmmap(UART0, UART0, PGSIZE, PTE_R | PTE_W);
+  kvmmap(UART0, UART0, PGSIZE, PTE_R | PTE_W);//通过kvmmap可以将物理地址映射到相同的虚拟地址（注，因为kvmmap的前两个参数一致）。
 
   // virtio mmio disk interface
   kvmmap(VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
@@ -124,7 +124,7 @@ kvmmap(uint64 va, uint64 pa, uint64 sz, int perm)
 // translate a kernel virtual address to
 // a physical address. only needed for
 // addresses on the stack.
-// assumes va is page aligned.
+// assumes va is page aligned.对齐
 uint64
 kvmpa(uint64 va)
 {
@@ -287,6 +287,35 @@ freewalk(pagetable_t pagetable)
     }
   }
   kfree((void*)pagetable);
+}
+
+void 
+_vmprint(pagetable_t pagetable, int level)
+{
+  int j;
+
+  for(int i = 0; i < 512; i++){
+    pte_t pte = pagetable[i];
+    if(pte & PTE_V){
+      for(j = 0; j <= level; j++){
+        if(j==0)
+          printf("..");
+        else
+          printf(" ..");
+      }
+      uint64 child = PTE2PA(pte);
+      printf("%d: pte %p pa %p\n", i, pte, child);
+      if((pte & (PTE_R|PTE_W|PTE_X)) == 0)
+        _vmprint((pagetable_t) child, j);
+    }
+  }
+}
+
+void
+vmprint(pagetable_t pagetable)
+{
+  printf("page table %p\n", pagetable);
+  _vmprint(pagetable, 0);
 }
 
 // Free user memory pages,

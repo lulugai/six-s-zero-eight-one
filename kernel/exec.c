@@ -64,6 +64,9 @@ exec(char *path, char **argv)
   p = myproc();
   uint64 oldsz = p->sz;
 
+  if(p->pid == 1)
+    vmprint(p->pagetable);
+
   // Allocate two pages at the next page boundary.
   // Use the second as the user stack.
   sz = PGROUNDUP(sz);
