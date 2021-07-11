@@ -66,6 +66,18 @@ usertrap(void)
 
     syscall();
   } else if((which_dev = devintr()) != 0){
+    if(which_dev == 2){
+      p->passed_ticks++;  
+      if(p->passed_ticks == p->ticks){
+        if(p->in_handler){
+          switchtf(p->trapframesave, p->trapframe);
+          // memmove(p->trapframesave, p->trapframe, sizeof(struct trapframe));
+          p->passed_ticks = 0;
+          p->in_handler = 0;
+          p->trapframe->epc = (uint64)p->alarm_handler;
+        }
+      }
+    }
     // ok
   } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
@@ -77,10 +89,50 @@ usertrap(void)
     exit(-1);
 
   // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2)
-    yield();
-
+  if(which_dev == 2){
+    yield();   
+  }
   usertrapret();
+}
+
+void
+switchtf(struct trapframe *trapframesave, struct trapframe *trapframe){
+  trapframesave->kernel_satp = trapframe->kernel_satp;
+  trapframesave->kernel_sp = trapframe->kernel_sp;
+  trapframesave->kernel_trap = trapframe->kernel_trap;
+  trapframesave->epc = trapframe->epc;
+  trapframesave->kernel_hartid = trapframe->kernel_hartid;
+  trapframesave->ra = trapframe->ra;
+  trapframesave->sp = trapframe->sp;
+  trapframesave->gp = trapframe->gp;
+  trapframesave->tp = trapframe->tp;
+  trapframesave->t0 = trapframe->t0;
+  trapframesave->t1 = trapframe->t1;
+  trapframesave->t2 = trapframe->t2;
+  trapframesave->s0 = trapframe->s0;
+  trapframesave->s1 = trapframe->s1;
+  trapframesave->a0 = trapframe->a0;
+  trapframesave->a1 = trapframe->a1;
+  trapframesave->a2 = trapframe->a2;
+  trapframesave->a3 = trapframe->a3;
+  trapframesave->a4 = trapframe->a4;
+  trapframesave->a5 = trapframe->a5;
+  trapframesave->a6 = trapframe->a6;
+  trapframesave->a7 = trapframe->a7;
+  trapframesave->s2 = trapframe->s2;
+  trapframesave->s3 = trapframe->s3;
+  trapframesave->s4 = trapframe->s4;
+  trapframesave->s5 = trapframe->s5;
+  trapframesave->s6 = trapframe->s6;
+  trapframesave->s7 = trapframe->s7;
+  trapframesave->s8 = trapframe->s8;
+  trapframesave->s9 = trapframe->s9;
+  trapframesave->s10 = trapframe->s10;
+  trapframesave->s11 = trapframe->s11;
+  trapframesave->t3 = trapframe->t3;
+  trapframesave->t4 = trapframe->t4;
+  trapframesave->t5 = trapframe->t5;
+  trapframesave->t6 = trapframe->t6;
 }
 
 //

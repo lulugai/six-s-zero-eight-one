@@ -8,6 +8,30 @@
 #include "proc.h"
 
 uint64
+sys_sigreturn(void)
+{
+  struct proc *p = myproc();
+  switchtf(p->trapframe, p->trapframesave);
+  // memmove(p->trapframe, p->trapframesave, sizeof(struct trapframe));
+  // p->passed_ticks = 0;
+  p->in_handler = 1;
+  return 0;
+}
+uint64
+sys_sigalarm(void)
+{
+  int ticks;
+  uint64 ah;
+  struct proc *p = myproc();
+
+  if(argint(0, &ticks) < 0 || argaddr(1, &ah) < 0)
+    return -1;
+  p->alarm_handler = (void(*)())ah;
+  p->ticks = ticks;
+  return 0;
+}
+
+uint64
 sys_exit(void)
 {
   int n;
@@ -70,6 +94,7 @@ sys_sleep(void)
     sleep(&ticks, &tickslock);
   }
   release(&tickslock);
+  backtrace();
   return 0;
 }
 
