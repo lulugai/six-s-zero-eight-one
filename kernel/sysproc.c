@@ -43,13 +43,26 @@ sys_sbrk(void)
 {
   int addr;
   int n;
+  struct proc *p = myproc();
 
   if(argint(0, &n) < 0)
     return -1;
-  addr = myproc()->sz;
-  if(growproc(n) < 0)
+  addr = p->sz;
+  uint64 newsz = addr + n;
+  
+  if(newsz >= MAXVA){
+    printf("OOM\n");
     return -1;
-  return addr;
+  }else{
+    p->sz = newsz;
+    if(n < 0){
+      uvmunmap(p->pagetable, PGROUNDUP(newsz), PGROUNDUP(-n) / PGSIZE, 1);
+    }
+    // if(growproc(n) < 0)
+      // return -1;
+    return addr;
+  }
+ 
 }
 
 uint64

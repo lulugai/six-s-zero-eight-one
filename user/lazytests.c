@@ -89,7 +89,7 @@ oom(char *s)
   } else {
     int xstatus;
     wait(&xstatus);
-    exit(xstatus == 0);
+    exit(!(xstatus == 0));
   }
 }
 
@@ -111,7 +111,7 @@ run(void f(char *), char *s) {
   } else {
     wait(&xstatus);
     if(xstatus != 0) 
-      printf("test %s: FAILED\n", s);
+      printf("test %s: FAILED %d\n", s, xstatus);
     else
       printf("test %s: OK\n", s);
     return xstatus == 0;
