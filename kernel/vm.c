@@ -319,7 +319,7 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
       panic("uvmcopy: page not present");
     pa = PTE2PA(*pte);
     *pte &= ~PTE_W;//parent or child readonly 
-    // *pte &= PTE_RSW;//cow target bit
+    *pte &= ~PTE_RSW;//cow target bit
     flags = PTE_FLAGS(*pte);
 
     increrefc(pa);
@@ -369,7 +369,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
     pte_t *pte = walk(pagetable, va0, 0);
     if(pte == 0)
       return -1;
-    if((*pte & PTE_W) == 0){
+    if((*pte & PTE_RSW) == 0){
       if(cowfault(pagetable, va0) < 0)//kalloc a page
         return -1;
     }

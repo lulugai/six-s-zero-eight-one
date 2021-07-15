@@ -52,7 +52,7 @@ cowfault(pagetable_t pagetable, uint64 va)
 
   // if(mappages(pagetable, va, 4096, pa2, PTE_W|PTE_R|PTE_U) != 0)
     // return -1; 
-  *pte = PA2PTE(pa2)|PTE_W|PTE_R|PTE_U|PTE_V|PTE_X;
+  *pte = PA2PTE(pa2)|PTE_W|PTE_R|PTE_U|PTE_V|PTE_X|PTE_RSW;
 
   return 0;
 }
