@@ -66,7 +66,7 @@ usertrap(void)
 
     syscall();
   } else if((which_dev = devintr()) != 0){
-    if(which_dev == 2){
+    if(which_dev == 2){ //time interrupt
       p->passed_ticks++;  
       if(p->passed_ticks == p->ticks){
         if(p->in_handler){
