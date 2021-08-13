@@ -65,7 +65,7 @@ usertrap(void)
     intr_on();
 
     syscall();
-  }else if(r_scause() == 13 || r_scause() == 15){//load or store pf
+  }else if(r_scause() == 13 || r_scause() == 15){//load or store pagefault
     uint64 va = r_stval();
     // printf("page fault: %p\n", va);
     // printf("sz %p\n");
