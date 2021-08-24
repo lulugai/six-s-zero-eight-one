@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "fs.h": "c",
+        "proc.h": "c",
+        "buf.h": "c",
+        "cmath": "cpp",
+        "type_traits": "cpp",
+        "limits": "cpp",
+        "typeinfo": "cpp"
+    }
+}
