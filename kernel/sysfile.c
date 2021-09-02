@@ -52,6 +52,112 @@ fdalloc(struct file *f)
   return -1;
 }
 
+
+uint64
+sys_mmap(void)
+{
+  int len, offset, prot, flags;
+  struct file *f;
+  if(argint(1, &len) < 0 || argint(2, &prot) < 0
+   || argint(3, &flags) < 0 || argfd(4, 0, &f) < 0 || argint(5, &offset) < 0){
+     return -1;
+   }
+
+  struct proc *p = myproc();
+  int i = 0;
+  for(i = 0; i < NVMA; i++){
+    if(!p->vma[i].used){
+      break;
+    }
+  }
+  if(i == NVMA) return -1;//no empty vma
+
+  if((!f->writable) && (prot == (PROT_READ | PROT_WRITE)) && (flags & MAP_SHARED))
+    return -1;
+
+  filedup(f);
+
+  p->vma[i].addr = PGROUNDDOWN(p->mmap_start - len);
+  p->vma[i].end = p->vma[i].addr + len;
+  p->mmap_start = p->vma[i].addr;
+
+  p->vma[i].f = f;
+  p->vma[i].flags = flags;
+  p->vma[i].len = len;
+  p->vma[i].offset = offset;//always 0
+  p->vma[i].prot = prot;
+  p->vma[i].used = 1;
+  // printf("v.addr: %p\n", p->vma[i].addr);
+  // printf("v.end: %p\n", p->vma[i].end);
+  return p->vma[i].addr;
+}
+
+uint64
+sys_munmap(void)
+{
+  uint64 addr;
+  int len;
+  if(argaddr(0, &addr) < 0 || argint(1, &len) < 0){
+    return -1;
+  }
+  return sysmunmap(addr, len);
+}
+
+uint64
+sysmunmap(uint64 addr, int len)
+{
+  struct VMA *v;
+  struct proc *p = myproc();
+
+  len = PGROUNDUP(len);
+  for(v = p->vma; v < p->vma + NVMA; v++){
+    if(v->used && v->addr <= addr && addr + len <= v->end){
+      break;
+    }
+  }
+  if(v == p->vma + NVMA) return -1;
+  
+  int i = 0;
+  uint64 tmp_addr = addr;
+  while(i < len / PGSIZE){
+    if(walkaddr(p->pagetable, tmp_addr)){  //load in pa
+      if(v->flags == MAP_SHARED && v->f->writable){
+        begin_op();
+        ilock(v->f->ip);
+        // int size = min(PGSIZE, (addr + len - _addr));
+        int s;
+        printf("write\n");
+        if((s = writei(v->f->ip, 1, tmp_addr, tmp_addr - addr, 4096)) < 4096){
+          iunlock(v->f->ip);
+          end_op();
+          printf("write error:%d\n", s);
+          return -1;
+        }
+        iunlock(v->f->ip);
+        end_op();
+      }
+      uvmunmap(p->pagetable, tmp_addr, 1, 1);
+    }
+    tmp_addr += PGSIZE;
+    i++;
+  }
+
+  // uvmunmap(p->pagetable, addr, len / PGSIZE, 1);
+
+  if(addr == v->addr){
+      v->addr += len;
+      v->len = v->end - v->addr;
+  }else if(addr + len == v->end){
+    v->end -= len;
+    v->len = v->end - v->addr;
+  }
+  if(v->addr == v->end){
+    filedecr(v->f);
+    v->used = 0;
+  }
+  return 0;
+}
+
 uint64
 sys_dup(void)
 {

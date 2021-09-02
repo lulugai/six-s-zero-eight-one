@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "fcntl.h": "c",
+        "defs.h": "c",
+        "proc.h": "c",
+        "file.h": "c",
+        "param.h": "c",
+        "limits": "c",
+        "*.tcc": "c"
+    }
+}

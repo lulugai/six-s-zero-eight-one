@@ -3,8 +3,11 @@
 #include "memlayout.h"
 #include "riscv.h"
 #include "spinlock.h"
-#include "proc.h"
+#include "fs.h"
 #include "defs.h"
+#include "sleeplock.h"
+#include "file.h"
+#include "proc.h"
 
 struct spinlock tickslock;
 uint ticks;
@@ -29,6 +32,46 @@ trapinithart(void)
   w_stvec((uint64)kernelvec);
 }
 
+
+int
+ummapfault(uint64 va){
+  struct proc *p = myproc();
+  struct VMA *v;
+
+  if(va >= MAXVA) return -1;
+  // printf("va: %p\n", va);
+  for(v = p->vma; v < p->vma + NVMA; v++){
+    // printf("use: %d\n", v->used);
+    if(v->used && va >= v->addr && va < v->end){
+      break;
+    }
+  }
+  if(v == p->vma + NVMA) return -1;
+
+  uint64 ka = (uint64)kalloc();
+  if(ka == 0){
+    return -1;
+  }
+
+  memset((void *)ka, 0, PGSIZE);
+
+  begin_op();
+  ilock(v->f->ip);
+  if((readi(v->f->ip, 0, ka, va - v->addr, 4096)) < 0){
+    iunlock(v->f->ip);
+    end_op();
+    return -1;
+  }
+  iunlock(v->f->ip);
+  end_op();
+
+  int flag = PTE_U | (v->prot << 1);//V R W X U
+  if((mappages(p->pagetable, va, 4096, ka, flag)) != 0){
+    kfree((void *)ka);
+    return -1;
+  }
+  return 0;
+}
 //
 // handle an interrupt, exception, or system call from user space.
 // called from trampoline.S
@@ -65,7 +108,11 @@ usertrap(void)
     intr_on();
 
     syscall();
-  } else if((which_dev = devintr()) != 0){
+  } else if(r_scause() == 13 || r_scause() == 15){
+    uint64 va = r_stval();
+    if(ummapfault(va) < 0)
+      p->killed = 1;
+  }else if((which_dev = devintr()) != 0){
     // ok
   } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);

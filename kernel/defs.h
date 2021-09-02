@@ -185,3 +185,6 @@ void            virtio_disk_intr(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+
+uint64          sysmunmap(uint64 addr, int len);
+struct file*    filedecr(struct file *f);

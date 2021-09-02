@@ -82,6 +82,19 @@ struct trapframe {
 
 enum procstate { UNUSED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
+struct VMA{
+  int len;
+  int prot;
+  int flags;
+  struct file *f;
+  int offset;
+  uint64 addr;
+  uint64 end;
+  int used;
+};
+#define NVMA   16
+#define min(a, b) ((a) < (b) ? (a) : (b))
+
 // Per-process state
 struct proc {
   struct spinlock lock;
@@ -93,6 +106,9 @@ struct proc {
   int killed;                  // If non-zero, have been killed
   int xstate;                  // Exit status to be returned to parent's wait
   int pid;                     // Process ID
+
+  struct VMA vma[NVMA];
+  uint64 mmap_start;
 
   // these are private to the process, so p->lock need not be held.
   uint64 kstack;               // Virtual address of kernel stack

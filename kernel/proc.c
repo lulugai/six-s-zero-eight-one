@@ -134,6 +134,11 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
+  for(int i = 0; i < NVMA; i++){
+    p->vma[i].used = 0;
+  }
+  p->mmap_start = MMAP_START;
+
   return p;
 }
 
@@ -302,6 +307,22 @@ fork(void)
 
   np->state = RUNNABLE;
 
+  np->mmap_start = p->mmap_start;
+  struct VMA *v;
+  struct VMA *nv = np->vma;
+  for(v = p->vma; v < p->vma + NVMA; v++, nv++){
+    nv->addr = v->addr;
+    nv->end = v->end;
+    nv->flags = v->flags;
+    nv->len = v->len;
+    nv->offset = v->offset;
+    nv->prot = v->prot;
+    nv->used = v->used;
+    if(v->used && v->f){
+      nv->f = filedup(v->f);
+    }
+  }  
+
   release(&np->lock);
 
   return pid;
@@ -392,6 +413,14 @@ exit(int status)
   p->xstate = status;
   p->state = ZOMBIE;
 
+  struct VMA *v;
+  for(v = p->vma; v < p->vma + NVMA; v++){
+    if(v->used){
+      if(sysmunmap(v->addr, v->len) < 0) {
+        panic("exit munmap");
+      }
+    }
+  }
   release(&original_parent->lock);
 
   // Jump into the scheduler, never to return.
